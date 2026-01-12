@@ -1,0 +1,15 @@
+services:
+  tailer:
+    image: maptiler/tileserver-gl
+    ports:
+    - 8086:8080
+    volumes:
+    - ./pmtiles:/data
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend
+    command: osrm-routed /data/world
+    ports:
+    - 5000:5000
+    volumes:
+    - ./osm:/data
+    - ./world.pbf:/data/world.pbf
