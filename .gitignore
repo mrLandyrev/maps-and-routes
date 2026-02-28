@@ -1,5 +1,6 @@
 geocoder/*
 osm/*
 *.pbf
+!pmtiles/fonts/**
 *.mbtiles
 !*.gitkeep
