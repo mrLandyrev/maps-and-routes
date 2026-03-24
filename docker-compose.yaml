@@ -13,3 +13,7 @@ services:
     volumes:
     - ./osm:/data
     - ./world.pbf:/data/world.pbf
+  watch:
+    build:
+      context: ./watch
+    
