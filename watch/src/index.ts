@@ -59,7 +59,7 @@ const calculateStep = async (route: Route | null, gps: GeoPoint | null, waypoint
 
     log(JSON.stringify(snapped.properties));
 
-    if (snapped.properties.dist > 0.05) {
+    if (snapped.properties.dist > 0.01) {
         log("recalculate route");
         const newRoute = await calculateRoute([gps, ...waypoints]);
         if (newRoute === null) {
