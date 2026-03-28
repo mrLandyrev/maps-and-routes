@@ -1,6 +1,17 @@
 import mqtt from "mqtt";
 import type { GeoPoint, Route, RouteStep } from "./geo.js";
 import * as turf from "@turf/turf";
+import YAML from 'yaml'
+import fs from 'fs'
+
+type Config = {
+    mqttHost: string;
+    osrmHost: string;
+};
+
+
+const configFile = fs.readFileSync('./config.yml', 'utf8')
+const config = YAML.parse(configFile) as Config;
 
 const log = (...data: any) =>
 {
@@ -9,7 +20,7 @@ const log = (...data: any) =>
 };
 
 
-const client = mqtt.connect("ws://host.docker.internal:1884");
+const client = mqtt.connect(config.mqttHost);
 client.on("connect", () => {
     console.log("connected");
 });
@@ -21,7 +32,7 @@ type RouteResponse = {
 
 const calculateRoute = async (waypoints: Array<GeoPoint>): Promise<Route | null> => {
     const q = waypoints.map((waypoint) => `${waypoint.lon},${waypoint.lat}`).join(";")
-    const url = `http://osrm:5000/route/v1/driving/${q}?overview=full&geometries=geojson&steps=true`;
+    const url = `${config.osrmHost}/route/v1/driving/${q}?overview=full&geometries=geojson&steps=true`;
 
     const response = await fetch(url);
     const data = await response.json() as RouteResponse;

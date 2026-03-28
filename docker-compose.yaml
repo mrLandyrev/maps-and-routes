@@ -19,4 +19,6 @@ services:
     build:
       context: ./watch
     restart: always
+    volumes:
+    - "./watch/config.yml:/app/config.yml"
     
