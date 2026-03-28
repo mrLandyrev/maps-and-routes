@@ -71,6 +71,16 @@ const calculateStep = async (route: Route | null, gps: GeoPoint | null, waypoint
     }
     const step = geometry2step[snapped.properties.index]!+1;
     log("set step");
+    const linePoints = [snapped.geometry.coordinates];
+    for (let i = snapped.properties.index+1;; i++) {
+        if (geometry2step[i]! !== step-1) {
+            break;
+        }
+        linePoints.push(geometry[i]!);
+    }
+    const line = turf.lineString(linePoints);
+    const distanceToNextPoint = turf.length(line, { units: "meters" })
+    client.publish("/navi/active/distanceToNextPoint", JSON.stringify(distanceToNextPoint), { retain: true });
     client.publish("/navi/active/step", JSON.stringify(step), { retain: true });
 };
 

@@ -1,6 +1,7 @@
 services:
   tailer:
     image: maptiler/tileserver-gl
+    restart: always
     ports:
     - 8086:8080
     volumes:
@@ -8,6 +9,7 @@ services:
   osrm:
     image: ghcr.io/project-osrm/osrm-backend
     command: osrm-routed /data/world
+    restart: always
     ports:
     - 5000:5000
     volumes:
@@ -16,4 +18,5 @@ services:
   watch:
     build:
       context: ./watch
+    restart: always
     
