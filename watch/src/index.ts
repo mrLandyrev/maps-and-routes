@@ -115,3 +115,5 @@ client.on("message", (topic, payload) => {
     }
     calculateStep(route, gps, waypoints);
 });
+
+console.log("here");
