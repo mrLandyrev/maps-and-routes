@@ -10,6 +10,9 @@ const log = (...data: any) =>
 
 
 const client = mqtt.connect("ws://host.docker.internal:1884");
+client.on("connect", () => {
+    console.log("connected");
+});
 console.log(client.connected);
 
 type RouteResponse = {
