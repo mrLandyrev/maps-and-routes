@@ -85,6 +85,7 @@ let route: Route | null = null;
 let waypoints: Array<GeoPoint> | null = null;
 
 client.on("message", (topic, payload) => {
+    log(topic);
     switch (topic) {
         case "/navi/active/route":
             route = JSON.parse(payload.toString());
