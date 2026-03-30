@@ -1,17 +1,9 @@
 import mqtt from "mqtt";
 import type { GeoPoint, Route, RouteStep } from "./geo.js";
 import * as turf from "@turf/turf";
-import YAML from 'yaml'
-import fs from 'fs'
+import { GetConfig } from "./config.js";
+import { OSRMClient } from "./osrmClient.js";
 
-type Config = {
-    mqttHost: string;
-    osrmHost: string;
-};
-
-
-const configFile = fs.readFileSync('./config.yml', 'utf8')
-const config = YAML.parse(configFile) as Config;
 
 const log = (...data: any) =>
 {
@@ -19,26 +11,10 @@ const log = (...data: any) =>
     console.log(currentDate, ...data);
 };
 
+const config = GetConfig();
 
 const client = mqtt.connect(config.mqttHost);
-client.on("connect", () => {
-    console.log("connected");
-});
-console.log(client.connected);
-
-type RouteResponse = {
-    routes: Array<Route>;
-};
-
-const calculateRoute = async (waypoints: Array<GeoPoint>): Promise<Route | null> => {
-    const q = waypoints.map((waypoint) => `${waypoint.lon},${waypoint.lat}`).join(";")
-    const url = `${config.osrmHost}/route/v1/driving/${q}?overview=full&geometries=geojson&steps=true`;
-
-    const response = await fetch(url);
-    const data = await response.json() as RouteResponse;
-
-    return data.routes[0] || null;
-};
+const osrmClient = new OSRMClient(config);
 
 const calculateStep = async (route: Route | null, gps: GeoPoint | null, waypoints: Array<GeoPoint> | null) => {
     log("start calculate route");
@@ -68,15 +44,20 @@ const calculateStep = async (route: Route | null, gps: GeoPoint | null, waypoint
         });
     });
 
+    const nearest = await osrmClient.getNearestPoint(gps);
+
+    if (nearest === null) {
+        log("no nearest point found");
+        return;
+    }
+
     const routeLine = turf.lineString(geometry);
-    const position = turf.point([gps.lon, gps.lat]);
-    const snapped = turf.nearestPointOnLine(routeLine, position);
+    const position = turf.point([nearest.lon, nearest.lat]);
+    const snapped = turf.nearestPointOnLine(routeLine, position, { units: "meters" });
 
-    log(JSON.stringify(snapped.properties));
-
-    if (snapped.properties.dist > 0.01) {
+    if (snapped.properties.dist > 10) {
         log("recalculate route");
-        const newRoute = await calculateRoute([gps, ...waypoints]);
+        const newRoute = await osrmClient.calculateRoute([nearest, ...waypoints]);
         if (newRoute === null) {
             log("route is null");
             return;
@@ -85,7 +66,6 @@ const calculateStep = async (route: Route | null, gps: GeoPoint | null, waypoint
         return;
     }
     const step = geometry2step[snapped.properties.index]!+1;
-    log("set step");
     const linePoints = [snapped.geometry.coordinates];
     for (let i = snapped.properties.index+1;; i++) {
         if (geometry2step[i]! !== step-1) {
@@ -104,19 +84,7 @@ let gps: GeoPoint | null = null;
 let route: Route | null = null;
 let waypoints: Array<GeoPoint> | null = null;
 
-function debounce<T extends Function>(cb: T, wait = 1000) {
-    let h: NodeJS.Timeout;
-    let callable = (...args: any) => {
-        clearTimeout(h);
-        h = setTimeout(() => cb(...args), wait);
-    };
-    return <T>(<any>callable);
-}
-
-const f = debounce(calculateStep);
-
 client.on("message", (topic, payload) => {
-    console.log(topic);
     switch (topic) {
         case "/navi/active/route":
             route = JSON.parse(payload.toString());
@@ -130,5 +98,3 @@ client.on("message", (topic, payload) => {
     }
     calculateStep(route, gps, waypoints);
 });
-
-console.log("here");
