@@ -6,6 +6,7 @@ services:
     - 8086:8080
     volumes:
     - ./pmtiles:/data
+    command: --public_url https://maps.mrlandyrev.netcraze.pro
   osrm:
     image: ghcr.io/project-osrm/osrm-backend
     command: osrm-routed /data/world
@@ -21,4 +22,4 @@ services:
     restart: always
     volumes:
     - "./watch/config.yml:/app/config.yml"
-    
+
